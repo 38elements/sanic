@@ -47,7 +47,8 @@ class Blueprint:
                 uri=uri[1:] if uri.startswith('//') else uri,
                 methods=future.methods,
                 host=future.host or self.host,
-                strict_slashes=future.strict_slashes
+                strict_slashes=future.strict_slashes,
+                stream=future.handler.is_stream
                 )(future.handler)
 
         for future in self.websocket_routes:
@@ -87,13 +88,14 @@ class Blueprint:
                 app.listener(event)(listener)
 
     def route(self, uri, methods=frozenset({'GET'}), host=None,
-              strict_slashes=False):
+              strict_slashes=False, stream=False):
         """Create a blueprint route from a decorated function.
 
         :param uri: endpoint at which the route will be accessible.
         :param methods: list of acceptable HTTP methods.
         """
         def decorator(handler):
+            handler.is_stream = stream
             route = FutureRoute(handler, uri, methods, host, strict_slashes)
             self.routes.append(route)
             return handler
@@ -217,3 +219,7 @@ class Blueprint:
     def delete(self, uri, host=None, strict_slashes=False):
         return self.route(uri, methods=["DELETE"], host=host,
                           strict_slashes=strict_slashes)
+
+    def stream(self, uri, methods=["POST"], host=None, strict_slashes=False):
+        return self.route(uri, methods=methods, host=host,
+                          strict_slashes=strict_slashes, stream=True)
